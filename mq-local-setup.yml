@@ -80,6 +80,9 @@
         env:
              LICENSE: "accept"
              MQ_DEV: "true"
+             MQ_QMGR_NAME: "{{ foldername }}"
+             MQ_ADMIN_PASSWORD: "ibmmq"
+             MQ_APP_PASSWORD: "ibmmq"
       register: container
 
     - debug:
