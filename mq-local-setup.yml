@@ -60,7 +60,7 @@
 #  Docker Container Module
 #  https://docs.ansible.com/ansible/2.6/modules/docker_container_module.html#docker-container-module
     - name: Create Container from MQ Image
-      community.docker.docker_container:
+      docker_container:
         name: "{{ containername }}"
         image: ibmcom/mq:latest
         state: present
