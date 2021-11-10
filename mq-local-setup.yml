@@ -1,0 +1,99 @@
+---
+
+- name: IBM MQ Local QM Generator
+  hosts: localhost
+  gather_facts: false
+  vars_prompt:
+    - name: foldername
+      prompt: What is the folder name for the working directory?
+      private: no
+    - name: containername
+      prompt: Please provide a container name?
+      private: no    
+  tasks:
+
+# Ansible Shell Module
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/shell_module.html
+
+    - name: This command will generate folder structure "workspace/{{ foldername }}"
+      ansible.builtin.shell:
+        cmd: mkdir -p "workspace/{{ foldername }}" && cd "workspace/{{ foldername }}" && mkdir config data && chmod 777 config data
+      register: foldervar
+
+    - debug:
+        var: foldervar
+
+    - name: List contents of working directory created
+      ansible.builtin.shell:
+        cmd: ls -al "workspace/{{ foldername }}"
+      register: lsoutput
+
+    - debug:
+        var: lsoutput.stdout_lines
+
+    - name: Copy Default config.mqsc into config folder
+      ansible.builtin.shell:
+        cmd: cp templates/config.mqsc "workspace/{{ foldername }}/config"
+      register: cpoutput
+
+    - debug:
+        var: cpoutput
+
+#  Docker Image Module
+#  https://docs.ansible.com/ansible/2.6/modules/docker_image_module.html#docker-image-module
+
+    - name: Pull Image ibmcom/mq:latest if not exists
+      docker_image:
+        source: pull
+        state: present
+        name: ibmcom/mq
+        tag: latest
+
+    - name: Pull the Present Working Directory to variable
+      ansible.builtin.shell:
+        cmd: pwd
+      register: currentdir
+
+    - debug:
+        var: currentdir.stdout
+
+#  Docker Container Module
+#  https://docs.ansible.com/ansible/2.6/modules/docker_container_module.html#docker-container-module
+    - name: Create Container from MQ Image
+      community.docker.docker_container:
+        name: "{{ containername }}"
+        image: ibmcom/mq:latest
+        state: present
+        #restart: yes
+        detach: true
+        debug: true
+        interactive: true
+        memory_reservation: 256m
+        memory: 1024m
+        volumes:
+        -  "{{ currentdir.stdout }}/workspace/{{ foldername }}/config:/etc/mqm"
+        -  "{{ currentdir.stdout }}/workspace/{{ foldername }}/data:/var/mqm"     
+        ports:
+        - "9443:9443"
+        - "9157:9157"
+        - "1414:1414"
+        env:
+             LICENSE: "accept"
+             MQ_DEV: "true"
+      register: container
+
+    - debug:
+        var: container.stderr_lines
+
+    - name: Prints Final Message with IBM MQ Container Usage Information
+      ansible.builtin.debug:
+        msg:
+        - ""
+        - "Your IBM MQ Container {{ containername }} has been created. You can work with it using the following commands:"
+        - ""
+        - "docker start {{ containername }} "
+        - "docker stop {{ containername }} "
+        - "docker rm {{ containername }} "
+        - ""
+        - "To view the WebUI, browse to https://localhost:9443"
+        - ""
