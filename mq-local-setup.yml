@@ -33,7 +33,7 @@
 
     - name: Copy Default config.mqsc into config folder
       ansible.builtin.shell:
-        cmd: cp templates/config.mqsc "workspace/{{ foldername }}/config"
+        cmd: cp templates/* "workspace/{{ foldername }}/config"
       register: cpoutput
 
     - debug:
@@ -71,8 +71,8 @@
         memory_reservation: 256m
         memory: 1024m
         volumes:
-        -  "{{ currentdir.stdout }}/workspace/{{ foldername }}/config:/etc/mqm"
-#        -  "{{ currentdir.stdout }}/workspace/{{ foldername }}/data:/var/mqm"     
+#        -  "{{ currentdir.stdout }}/workspace/{{ foldername }}/config:/etc/mqm"
+        -  "{{ currentdir.stdout }}/workspace/{{ foldername }}/data:/var/mqm"     
         ports:
         - "9443:9443"
         - "9157:9157"
